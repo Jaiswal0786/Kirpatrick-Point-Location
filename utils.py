@@ -1,0 +1,92 @@
+from math import atan2, degrees
+import matplotlib.pyplot as plt
+
+class Point:
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+    def __repr__(self) -> str:
+        return f"({self.x}, {self.y})"
+
+    def __str__(self) -> str:
+        return f"({self.x}, {self.y})"
+
+    def __eq__(self, other: object) -> bool:
+        return (self.x == other.x and self.y == other.y)
+  
+    def __add__(self, other):
+        return Point((self.x + other.x), (self.y + other.y))
+
+    def __sub__(self, other):
+        return Point((self.x - other.x), (self.y - other.y))
+    
+    def __truediv__(self, scalar: int):
+        return Point(self.x / scalar, self.y / scalar)
+    
+    def __hash__(self) -> int:
+        return hash(self.__repr__())
+
+class Polygon:
+    def __init__(self, *vertices):
+        if len(vertices) < 3:
+            raise ValueError("Polygon must have at least 3 sides")
+
+        self.V = [pt if isinstance(pt, Point) else Point(pt[0], pt[1]) for pt in vertices]
+        self.n = len(self.V)
+        self.E = [(self.V[i], self.V[(i + 1) % self.n]) for i in range(self.n)]
+
+    def __repr__(self) -> str:
+        return f"Polygon({self.V})"
+
+    def __str__(self) -> str:
+        return f"{self.V}"
+    
+    def __eq__(self, other: object) -> bool:
+        return self.V == other.V
+
+    def __hash__(self) -> int:
+        return hash(self.__repr__())
+    
+def is_inside(A: Point, P: Polygon) -> bool:
+    [vertex_a, vertex_b, vertex_c] = [edge[0] for edge in P.E]
+    vector_a = Point(vertex_a.x - A.x, vertex_a.y - A.y)
+    vector_b = Point(vertex_b.x - A.x, vertex_b.y - A.y)
+    vector_c = Point(vertex_c.x - A.x, vertex_c.y - A.y)
+
+    determinant = (
+        (vector_a.x * vector_a.x + vector_a.y * vector_a.y) * (vector_b.x * vector_c.y - vector_c.x * vector_b.y) -
+        (vector_b.x * vector_b.x + vector_b.y * vector_b.y) * (vector_a.x * vector_c.y - vector_c.x * vector_a.y) +
+        (vector_c.x * vector_c.x + vector_c.y * vector_c.y) * (vector_a.x * vector_b.y - vector_b.x * vector_a.y)
+    )
+
+    return determinant > 0
+
+         
+
+def getcommon(pts: list[Point], interior=None) -> list[Point]:
+    def custom_sort(point, center):
+        angle = degrees(atan2(point.x - center.x, point.y - center.y)) + 360 % 360
+        return angle
+    cent = sum(pts, Point(0, 0)) / len(pts)
+    if interior is not None:
+        cent = interior
+    
+    if interior is not None:
+        cent = interior
+    
+    pts.sort(key=lambda a: custom_sort(a, cent), reverse=True)
+    return pts          
+
+def point_in_triangle(pt: Point, poly: Polygon) -> bool:
+    def check(p1, p2, p3):
+        return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y)
+
+    v1 = poly.V[0]
+    v2 = poly.V[1]
+    v3 = poly.V[2]
+    
+    has_neg = (check(pt, v1, v2) < 0) or (check(pt, v2, v3) < 0) or (check(pt, v3, v1) < 0)
+    has_pos = (check(pt, v1, v2) > 0) or (check(pt, v2, v3) > 0) or (check(pt, v3, v1) > 0)
+
+    return not(has_neg and has_pos)
